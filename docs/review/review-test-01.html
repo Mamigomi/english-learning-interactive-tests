@@ -1,177 +1,694 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>복습 테스트</title>
-<style>
-body{
-  font-family: Arial, sans-serif;
-  background:#0f172a;
-  color:white;
-  margin:0;
-  padding:20px;
-}
-.container{
-  max-width:800px;
-  margin:auto;
-}
-.timer{
-  text-align:right;
-  font-weight:bold;
-}
-.question{
-  margin-top:20px;
-  font-size:18px;
-  line-height:1.6;
-}
-.choices{
-  margin-top:20px;
-}
-button{
-  width:100%;
-  padding:12px;
-  margin:8px 0;
-  background:#1e293b;
-  color:white;
-  border:1px solid #334155;
-  cursor:pointer;
-  border-radius:8px;
-}
-button:hover{
-  background:#334155;
-}
-.feedback{
-  margin-top:15px;
-  font-weight:bold;
-}
-.hidden{
-  display:none;
-}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>복습 테스트 01 (혼합형: 객관식+받아쓰기)</title>
+  <style>
+    :root { --bg:#0b0f14; --card:#111826; --text:#e8eef7; --muted:#a9b4c4; --accent:#7dd3fc; --danger:#fb7185; --ok:#86efac; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, sans-serif; background:linear-gradient(180deg,#070a0f, #0b0f14 55%, #070a0f); color:var(--text); }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 22px 14px 40px; }
+    .top { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    .badge { background: rgba(125,211,252,.12); border:1px solid rgba(125,211,252,.25); color:var(--accent); padding:8px 10px; border-radius: 999px; font-weight:800; font-size:13px; }
+    .timer { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); padding:10px 12px; border-radius: 14px; }
+    .timer strong { font-size:18px; letter-spacing:.4px; }
+    .bar { width: 180px; height: 8px; background: rgba(255,255,255,.08); border-radius: 999px; overflow:hidden; }
+    .bar > i { display:block; height:100%; width:100%; background: rgba(125,211,252,.75); }
+    .card { margin-top: 14px; background: rgba(17,24,38,.75); border: 1px solid rgba(255,255,255,.10); border-radius: 20px; padding: 18px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+    .meta { display:flex; justify-content:space-between; align-items:center; gap:10px; color:var(--muted); font-weight:700; }
+    .meta b { color: var(--text); }
+    .passage { margin-top: 12px; line-height: 1.7; font-size: 16px; white-space: pre-line; }
+    .q { margin-top: 14px; font-weight: 900; font-size: 16px; }
+    .sub { margin-top: 8px; color: var(--muted); font-weight: 700; font-size: 13px; }
+    .choices { margin-top: 12px; display:grid; gap:10px; }
+    button.choice {
+      width:100%; text-align:left; border-radius: 16px; padding: 12px 12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: var(--text); font-size: 15px; font-weight: 800; cursor:pointer;
+      transition: transform .06s ease, border-color .12s ease, background .12s ease;
+    }
+    button.choice:hover { transform: translateY(-1px); border-color: rgba(125,211,252,.35); background: rgba(125,211,252,.08); }
+    button.choice:disabled { cursor: not-allowed; opacity:.75; }
+    .choice .num { display:inline-block; width: 34px; color: var(--muted); font-weight: 900; }
+    .typing {
+      margin-top: 12px;
+      display:flex;
+      gap:10px;
+      align-items:stretch;
+      flex-wrap:wrap;
+    }
+    input[type="text"]{
+      flex: 1 1 260px;
+      min-width: 220px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      font-weight: 800;
+      font-size: 15px;
+      outline: none;
+    }
+    input[type="text"]:focus{
+      border-color: rgba(125,211,252,.45);
+      box-shadow: 0 0 0 3px rgba(125,211,252,.12);
+    }
+    .btn {
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-weight: 900;
+      cursor:pointer;
+      white-space: nowrap;
+    }
+    .btn.primary { border-color: rgba(125,211,252,.35); background: rgba(125,211,252,.14); color: var(--accent); }
+    .btn.danger { border-color: rgba(251,113,133,.35); background: rgba(251,113,133,.10); color: #fecdd3; }
+    .feedback { margin-top: 14px; padding: 12px; border-radius: 16px; border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); }
+    .feedback.ok { border-color: rgba(134,239,172,.35); background: rgba(134,239,172,.08); }
+    .feedback.bad { border-color: rgba(251,113,133,.35); background: rgba(251,113,133,.08); }
+    .hint-title { font-weight: 900; margin-bottom: 8px; }
+    .hint-list { margin:0; padding-left: 18px; color: var(--muted); }
+    .actions { margin-top: 14px; display:flex; gap:10px; flex-wrap:wrap; }
+    .result { text-align:center; padding: 26px 12px; }
+    .result h1 { margin: 0 0 8px; font-size: 22px; }
+    .result p { margin: 6px 0; color: var(--muted); font-weight: 800; }
+    .small { font-size: 13px; color: var(--muted); font-weight: 700; }
+    .footer { margin-top: 12px; color: var(--muted); font-size: 12px; text-align:center; }
+    code.k { background: rgba(255,255,255,.06); padding: 2px 6px; border-radius: 8px; }
+  </style>
 </head>
+
 <body>
-<div class="container">
-<div class="timer">남은 시간: <span id="time">60</span>초</div>
-<div id="quiz"></div>
-<div id="feedback" class="feedback"></div>
-</div>
+  <div class="wrap">
+    <div class="top">
+      <div class="badge">복습 테스트 · 혼합형(객관식+받아쓰기) · 60초 · ①~⑤</div>
+      <div class="timer" aria-label="timer">
+        <span class="small">남은 시간</span>
+        <strong id="time">60</strong>
+        <span class="small">초</span>
+        <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+      </div>
+    </div>
+
+    <div class="card" id="card"></div>
+
+    <div class="footer">
+      규칙: 문제 화면에는 해설이 나오지 않습니다. 정답/오답 후 피드백에서만 해설이 표시됩니다.
+    </div>
+  </div>
 
 <script>
+(() => {
+  const circled = ["①","②","③","④","⑤"];
 
-const questions = [
-{
-type:"expression",
-text:`G: What's wrong, Suho? You look worried.
+  // -------------------------
+  // 1) 원문 대화(해설/화살표는 '별도'로만 보관, 화면 지문에는 미노출)
+  // -------------------------
+  const dialogues = {
+    d1: `G: What's wrong, Suho? You look worried.
 B: My dog is sick. He won't eat or play.
 G: Oh, I'm sorry to hear that.
 B: What should I do? I'm so worried.`,
-prompt:"밑줄 친 표현의 뜻은?",
-underline:"I'm sorry to hear that",
-choices:["그 말을 들으니 유감이야","정말 부럽다","어서 와","조심해","미안해"],
-answer:0,
-explain:"I'm sorry to hear that = 유감/위로 표현"
-},
+    d2: `G: What's up, Jamie? You look excited.
+B: I got a ticket to the BM concert next month. I'm so excited.
+G: That's great.
+B: Thanks.`,
+    d3: `G: Is anything wrong, Tim?
+B: My phone is not working.
+G: That's too bad.
+B: It was a birthday present. I'm very upset.`,
+    d4: `B: You know what? My team won the soccer tournament.
+W: Congratulations, Minsu! I'm really happy for you.
+B: Thanks, Ms. Kim. I'm really happy.`
+  };
 
-{
-type:"vocab",
-text:`G: What's wrong, Suho? You look worried.`,
-prompt:"worried의 뜻은?",
-underline:"worried",
-choices:["걱정하는","행복한","배고픈","화난","지루한"],
-answer:0,
-explain:"worried = 걱정하는"
-},
+  // -------------------------
+  // 2) 문항(혼합형)
+  // type: "mcq" | "typing"
+  // - mcq: choices(5개), correctIndex
+  // - typing: answers([허용 정답들]), caseInsensitive, trim, ignorePunct
+  // -------------------------
+  const rawQuestions = [
+    // (1) 표현 의미 - 객관식
+    {
+      id: "q1",
+      type: "mcq",
+      stem: dialogues.d1,
+      prompt: "다음 표현의 뜻으로 가장 알맞은 것은?  →  I'm sorry to hear that",
+      choices: [
+        { text: "그 말을 들으니 유감이야", meaning: "유감/위로 표현" },
+        { text: "정말 부럽다", meaning: "부러움" },
+        { text: "어서 와", meaning: "환영/인사" },
+        { text: "조심해", meaning: "주의/경고" },
+        { text: "미안해", meaning: "사과" }
+      ],
+      correctIndex: 0,
+      explainLines: [
+        "I'm sorry to hear that = ‘그 말을 들으니 유감이야’ (유감/위로 표현)"
+      ]
+    },
 
-{
-type:"spelling",
-text:`B: You know what? My team won the soccer tournament.`,
-prompt:"‘토너먼트’의 올바른 철자는?",
-underline:null,
-choices:["tournement","tournament","tornament","tourment","tournamint"],
-answer:1,
-explain:"정답: tournament"
-},
+    // (2) 단어 의미 - 객관식
+    {
+      id: "q2",
+      type: "mcq",
+      stem: dialogues.d1,
+      prompt: "밑줄 친 단어의 뜻으로 가장 알맞은 것은?  →  worried",
+      choices: [
+        { text: "걱정하는", meaning: "worried" },
+        { text: "배고픈", meaning: "hungry" },
+        { text: "졸린", meaning: "sleepy" },
+        { text: "화난", meaning: "angry" },
+        { text: "지루한", meaning: "bored" }
+      ],
+      correctIndex: 0,
+      explainLines: [
+        "worried = 걱정하는"
+      ]
+    },
 
-{
-type:"blank",
-text:`G: Oh, I'm ____ to hear that.`,
-prompt:"빈칸에 들어갈 말은?",
-underline:"____",
-choices:["happy","sorry","excited","angry","sure"],
-answer:1,
-explain:"I'm sorry to hear that"
-}
-];
+    // (3) 빈칸 - 객관식(단어)
+    {
+      id: "q3",
+      type: "mcq",
+      stem: `B: My dog is sick. He won't ____ or play.`,
+      prompt: "빈칸에 들어갈 가장 알맞은 단어는?",
+      choices: [
+        { text: "eat", meaning: "먹다" },
+        { text: "buy", meaning: "사다" },
+        { text: "sleep", meaning: "자다" },
+        { text: "run", meaning: "달리다" },
+        { text: "laugh", meaning: "웃다" }
+      ],
+      correctIndex: 0,
+      explainLines: [
+        "He won't eat or play. = 그는 먹지도 놀지도 않을 거야."
+      ]
+    },
 
-let current=0;
-let score=0;
-let time=60;
-let timer;
+    // (4) 받아쓰기(단어 철자) - tournament
+    {
+      id: "q4",
+      type: "typing",
+      stem: dialogues.d4,
+      prompt: "받아쓰기: 대화 속 ‘토너먼트’에 해당하는 영어 단어를 정확히 입력하세요.",
+      answers: ["tournament"],
+      caseInsensitive: true,
+      trim: true,
+      ignorePunct: true,
+      explainLines: [
+        "tournament = 토너먼트"
+      ]
+    },
 
-function startTimer(){
-timer=setInterval(()=>{
-time--;
-document.getElementById("time").textContent=time;
-if(time<=0){
-clearInterval(timer);
-nextQuestion();
-}
-},1000);
-}
+    // (5) 받아쓰기(표현) - What's up
+    {
+      id: "q5",
+      type: "typing",
+      stem: dialogues.d2,
+      prompt: "받아쓰기: 친근한 인사말 ‘잘 지내?/무슨 일이야?’에 해당하는 표현을 정확히 입력하세요. (대화에 그대로 있음)",
+      answers: ["What's up", "Whats up", "what's up", "whats up"],
+      caseInsensitive: true,
+      trim: true,
+      ignorePunct: true,
+      explainLines: [
+        "What's up? = ‘잘 지내?/무슨 일이야?’ (친근하고 가벼운 인사말)"
+      ]
+    },
 
-function render(){
-if(current>=questions.length){
-document.getElementById("quiz").innerHTML=`<h2>완료!</h2><p>점수: ${score}/${questions.length}</p>`;
-return;
-}
+    // (6) 단어 의미 - upset (객관식)
+    {
+      id: "q6",
+      type: "mcq",
+      stem: dialogues.d3,
+      prompt: "밑줄 친 단어의 뜻으로 가장 알맞은 것은?  →  upset",
+      choices: [
+        { text: "속상한", meaning: "upset" },
+        { text: "신이 난", meaning: "excited" },
+        { text: "피곤한", meaning: "tired" },
+        { text: "배부른", meaning: "full" },
+        { text: "차가운", meaning: "cold" }
+      ],
+      correctIndex: 0,
+      explainLines: [
+        "upset = 속상한"
+      ]
+    },
 
-let q=questions[current];
+    // (7) 받아쓰기(단어) - working
+    {
+      id: "q7",
+      type: "typing",
+      stem: dialogues.d3,
+      prompt: "받아쓰기: ‘작동하다’의 의미로 대화에 나온 단어를 입력하세요. (My phone is not ____.)",
+      answers: ["working", "work"],
+      caseInsensitive: true,
+      trim: true,
+      ignorePunct: true,
+      explainLines: [
+        "work(동사) = 작동하다 / not working = 작동하지 않다"
+      ]
+    },
 
-let displayText=q.text;
-if(q.underline){
-displayText=displayText.replace(q.underline,`<u>${q.underline}</u>`);
-}
+    // (8) 표현 의미 - That's great (객관식)
+    {
+      id: "q8",
+      type: "mcq",
+      stem: dialogues.d2,
+      prompt: "다음 표현의 뜻으로 가장 알맞은 것은?  →  That's great.",
+      choices: [
+        { text: "잘됐다", meaning: "긍정/기쁜 반응" },
+        { text: "정말 안 됐다", meaning: "유감" },
+        { text: "괜찮아?", meaning: "걱정/안부" },
+        { text: "어서 와", meaning: "환영" },
+        { text: "조심해", meaning: "주의" }
+      ],
+      correctIndex: 0,
+      explainLines: [
+        "That's great. = ‘잘됐다’"
+      ]
+    },
 
-let html=`<div class="question">${displayText}</div>
-<div><b>${q.prompt}</b></div>
-<div class="choices">`;
+    // (9) 받아쓰기(표현) - Congratulations
+    {
+      id: "q9",
+      type: "typing",
+      stem: dialogues.d4,
+      prompt: "받아쓰기: ‘축하해’에 해당하는 영어 표현(대문자 포함)을 정확히 입력하세요.",
+      answers: ["Congratulations", "Congratulations!"],
+      caseInsensitive: false,
+      trim: true,
+      ignorePunct: true,
+      explainLines: [
+        "Congratulations! = ‘축하해’ (반드시 복수 형태로 씀)"
+      ]
+    },
 
-q.choices.forEach((c,i)=>{
-html+=`<button onclick="checkAnswer(${i})">${i+1}. ${c}</button>`;
-});
+    // (10) 빈칸 - 객관식(표현)  sorry
+    {
+      id: "q10",
+      type: "mcq",
+      stem: `G: Oh, I'm ____ to hear that.`,
+      prompt: "빈칸에 들어갈 가장 알맞은 단어는?",
+      choices: [
+        { text: "happy", meaning: "행복한" },
+        { text: "sorry", meaning: "미안한/유감인" },
+        { text: "excited", meaning: "신이 난" },
+        { text: "angry", meaning: "화난" },
+        { text: "sure", meaning: "확신하는" }
+      ],
+      correctIndex: 1,
+      explainLines: [
+        "I'm sorry to hear that. = ‘그 말을 들으니 유감이야’"
+      ]
+    },
 
-html+=`</div>`;
+    // (11) 받아쓰기(단어) - ticket
+    {
+      id: "q11",
+      type: "typing",
+      stem: dialogues.d2,
+      prompt: "받아쓰기: ‘표/티켓’에 해당하는 영어 단어를 정확히 입력하세요. (I got a ____.)",
+      answers: ["ticket"],
+      caseInsensitive: true,
+      trim: true,
+      ignorePunct: true,
+      explainLines: [
+        "ticket = 표/티켓"
+      ]
+    },
 
-document.getElementById("quiz").innerHTML=html;
-document.getElementById("feedback").textContent="";
-}
+    // (12) 표현 의미 - That's too bad (객관식)
+    {
+      id: "q12",
+      type: "mcq",
+      stem: dialogues.d3,
+      prompt: "다음 표현의 뜻으로 가장 알맞은 것은?  →  That's too bad.",
+      choices: [
+        { text: "정말 안 됐다", meaning: "유감/위로" },
+        { text: "정말 멋지다", meaning: "칭찬" },
+        { text: "난 몰라", meaning: "무관심" },
+        { text: "서둘러", meaning: "촉구" },
+        { text: "조용히 해", meaning: "명령" }
+      ],
+      correctIndex: 0,
+      explainLines: [
+        "That's too bad. = ‘정말 안 됐다’ (유감/위로 표현)"
+      ]
+    }
+  ];
 
-function checkAnswer(i){
-clearInterval(timer);
-let q=questions[current];
+  // -------------------------
+  // 3) 유틸: 셔플 + 객관식 정답 위치 연속 방지
+  // -------------------------
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
 
-if(i===q.answer){
-score++;
-document.getElementById("feedback").textContent="정답! " + q.explain;
-}else{
-document.getElementById("feedback").textContent="오답! " + q.explain;
-}
+  function prepareQuestions(raw) {
+    let lastMcqCorrectPos = -1;
+    return raw.map(q => {
+      if (q.type !== "mcq") return q;
 
-setTimeout(nextQuestion,1000);
-}
+      const opts = q.choices.map((o, idx) => ({...o, _isCorrect: idx === q.correctIndex}));
+      for (let attempt = 0; attempt < 40; attempt++) {
+        const s = shuffle(opts);
+        const correctPos = s.findIndex(x => x._isCorrect);
+        if (correctPos !== lastMcqCorrectPos) {
+          lastMcqCorrectPos = correctPos;
+          return {
+            ...q,
+            choices: s.map(({text, meaning}) => ({text, meaning})),
+            correctPos
+          };
+        }
+      }
+      const s = shuffle(opts);
+      const correctPos = s.findIndex(x => x._isCorrect);
+      lastMcqCorrectPos = correctPos;
+      return {
+        ...q,
+        choices: s.map(({text, meaning}) => ({text, meaning})),
+        correctPos
+      };
+    });
+  }
 
-function nextQuestion(){
-current++;
-time=60;
-document.getElementById("time").textContent=time;
-render();
-startTimer();
-}
+  // 받아쓰기 채점용 normalize
+  function normalizeInput(str, {caseInsensitive=true, trim=true, ignorePunct=true} = {}) {
+    let s = String(str);
+    if (trim) s = s.trim();
+    // 공백 정리
+    s = s.replace(/\s+/g, " ");
+    if (ignorePunct) {
+      // 흔한 구두점 제거: ! ? . , : ; ' " ( ) 등
+      // (What's up) 같은 경우 ignorePunct=true면 apostrophe 제거되므로,
+      // answers에도 apostrophe 없는 형태(Whats up)를 함께 넣어둠.
+      s = s.replace(/[!?.,:;()"“”‘’]/g, "");
+    }
+    if (caseInsensitive) s = s.toLowerCase();
+    return s;
+  }
 
-render();
-startTimer();
+  const questions = prepareQuestions(rawQuestions);
 
+  // -------------------------
+  // 4) 상태/타이머
+  // -------------------------
+  let idx = 0;
+  let score = 0;
+  let remain = 60;
+  let timer = null;
+  let locked = false;
+
+  const card = document.getElementById("card");
+  const timeEl = document.getElementById("time");
+  const barEl = document.getElementById("bar");
+
+  function nowSeoulString() {
+    try {
+      return new Intl.DateTimeFormat("ko-KR", {
+        timeZone: "Asia/Seoul",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit"
+      }).format(new Date());
+    } catch {
+      return new Date().toLocaleString("ko-KR");
+    }
+  }
+
+  function setTimer(sec) {
+    remain = sec;
+    timeEl.textContent = String(remain);
+    barEl.style.width = `${(remain/60)*100}%`;
+    barEl.style.background = remain <= 10 ? "rgba(251,113,133,.85)" : "rgba(125,211,252,.75)";
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    setTimer(60);
+    timer = setInterval(() => {
+      if (locked) return;
+      remain -= 1;
+      if (remain < 0) remain = 0;
+      setTimer(remain);
+      if (remain === 0) {
+        clearInterval(timer);
+        locked = true;
+        // 시간초과: 오답 처리 + 피드백 표시 후 다음
+        showFeedback(false, {type:"timeout"});
+        setTimeout(() => next(), 1200);
+      }
+    }, 1000);
+  }
+
+  // -------------------------
+  // 5) 렌더
+  // -------------------------
+  function render() {
+    if (idx >= questions.length) return renderResult();
+
+    locked = false;
+    const q = questions[idx];
+
+    const metaHtml = `
+      <div class="meta">
+        <div><b>${idx + 1}</b> / ${questions.length}</div>
+        <div>현재 점수: <b>${score}</b></div>
+      </div>
+    `;
+
+    const stemHtml = `<div class="passage">${escapeHtml(q.stem)}</div>`;
+    const promptHtml = `<div class="q">${escapeHtml(q.prompt)}</div>`;
+
+    let bodyHtml = "";
+
+    if (q.type === "mcq") {
+      const choicesHtml = q.choices.map((o, i) => `
+        <button class="choice" data-i="${i}">
+          <span class="num">${circled[i]}</span> ${escapeHtml(o.text)}
+        </button>
+      `).join("");
+
+      bodyHtml = `
+        <div class="choices">${choicesHtml}</div>
+        <div id="feedback"></div>
+        <div class="actions">
+          <button class="btn danger" id="reset">처음부터</button>
+          <button class="btn primary" id="skip">다음 문제</button>
+        </div>
+        <div class="sub">객관식 팁: 정답을 고른 뒤에만 해설이 공개됩니다.</div>
+      `;
+    } else {
+      // typing
+      bodyHtml = `
+        <div class="typing">
+          <input id="answerInput" type="text" placeholder="여기에 입력하고 Enter 또는 제출" autocomplete="off" spellcheck="false" />
+          <button class="btn primary" id="submitTyping">제출</button>
+        </div>
+        <div id="feedback"></div>
+        <div class="actions">
+          <button class="btn danger" id="reset">처음부터</button>
+          <button class="btn" id="skip">다음 문제</button>
+        </div>
+        <div class="sub">받아쓰기 팁: 대소문자/구두점 허용 여부는 문제마다 다릅니다. (정답 처리 기준은 자동으로 적용됩니다.)</div>
+      `;
+    }
+
+    card.innerHTML = `${metaHtml}${stemHtml}${promptHtml}${bodyHtml}`;
+
+    // 공통 버튼
+    document.getElementById("reset").addEventListener("click", () => {
+      clearInterval(timer);
+      idx = 0; score = 0;
+      // 다시 셔플/배치
+      const rebuilt = prepareQuestions(rawQuestions);
+      questions.splice(0, questions.length, ...rebuilt);
+      render();
+      startTimer();
+    });
+
+    document.getElementById("skip").addEventListener("click", () => {
+      if (locked) return;
+      locked = true;
+      clearInterval(timer);
+      showFeedback(false, {type:"skip"});
+      setTimeout(() => next(), 700);
+    });
+
+    if (q.type === "mcq") {
+      card.querySelectorAll("button.choice").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (locked) return;
+          locked = true;
+          clearInterval(timer);
+
+          const chosen = Number(btn.dataset.i);
+          const correct = chosen === q.correctPos;
+
+          // 버튼 비활성화
+          card.querySelectorAll("button.choice").forEach(b => b.disabled = true);
+
+          if (correct) score += 1;
+          showFeedback(correct, {type:"mcq", chosen});
+
+          setTimeout(() => next(), 900);
+        });
+      });
+    } else {
+      const input = document.getElementById("answerInput");
+      const submit = document.getElementById("submitTyping");
+
+      const submitFn = () => {
+        if (locked) return;
+        locked = true;
+        clearInterval(timer);
+
+        const userRaw = input.value;
+        const userNorm = normalizeInput(userRaw, q);
+        const ok = q.answers.some(ans => {
+          const ansNorm = normalizeInput(ans, q);
+          return userNorm === ansNorm;
+        });
+
+        input.disabled = true;
+        submit.disabled = true;
+
+        if (ok) score += 1;
+        showFeedback(ok, {type:"typing", userRaw});
+
+        setTimeout(() => next(), 1000);
+      };
+
+      submit.addEventListener("click", submitFn);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") submitFn();
+      });
+
+      // 자동 포커스
+      setTimeout(() => input.focus(), 60);
+    }
+
+    startTimer();
+  }
+
+  // -------------------------
+  // 6) 피드백
+  // -------------------------
+  function showFeedback(isCorrect, ctx) {
+    const q = questions[idx];
+    const fb = document.getElementById("feedback");
+    if (!fb) return;
+
+    // 시간초과/스킵 공통
+    if (ctx?.type === "timeout" || ctx?.type === "skip") {
+      const reason = ctx.type === "timeout" ? "시간 초과" : "다음으로 이동";
+      fb.innerHTML = `
+        <div class="feedback bad">
+          <div class="hint-title">${reason} ❌</div>
+          ${renderExplain(q)}
+        </div>
+      `;
+      return;
+    }
+
+    // 정답/오답
+    if (isCorrect) {
+      fb.innerHTML = `
+        <div class="feedback ok">
+          <div class="hint-title">정답 ✅</div>
+          ${ctx?.type === "typing" ? `<div class="small">입력: <b style="color:var(--text)">${escapeHtml(ctx.userRaw || "")}</b></div>` : ""}
+          ${renderExplain(q)}
+        </div>
+      `;
+    } else {
+      // 오답일 때는 객관식이면 선택지 의미 피드백도 함께
+      let extra = "";
+      if (q.type === "mcq") {
+        const list = q.choices.map((o, i) =>
+          `<li>${circled[i]} ${escapeHtml(o.text)} → <b>${escapeHtml(o.meaning || "")}</b></li>`
+        ).join("");
+        extra = `<ul class="hint-list">${list}</ul>`;
+      } else {
+        extra = `<div class="small">입력: <b style="color:var(--text)">${escapeHtml(ctx.userRaw || "")}</b></div>`;
+      }
+
+      fb.innerHTML = `
+        <div class="feedback bad">
+          <div class="hint-title">오답 ❌</div>
+          ${extra}
+          ${renderExplain(q, true)}
+        </div>
+      `;
+    }
+  }
+
+  function renderExplain(q, showCorrectForTyping=false) {
+    const lines = (q.explainLines || []).map(x => `<li>${escapeHtml(x)}</li>`).join("");
+    let correctLine = "";
+
+    if (showCorrectForTyping && q.type === "typing") {
+      // 정답 노출은 피드백에서만
+      correctLine = `<li>정답: <b>${escapeHtml(q.answers[0])}</b></li>`;
+    }
+
+    if (!lines && !correctLine) return "";
+    return `<ul class="hint-list">${correctLine}${lines}</ul>`;
+  }
+
+  // -------------------------
+  // 7) 다음/결과
+  // -------------------------
+  function next() {
+    idx += 1;
+    render();
+  }
+
+  function renderResult() {
+    clearInterval(timer);
+    const submitted = nowSeoulString();
+    const total = questions.length;
+    const percent = Math.round((score / total) * 100);
+
+    card.innerHTML = `
+      <div class="result">
+        <h1>제출 완료</h1>
+        <p>점수: <b style="color:var(--text)">${score}</b> / ${total} (${percent}%)</p>
+        <p>제출 시각(KST): <b style="color:var(--text)">${submitted}</b></p>
+        <div class="actions" style="justify-content:center; margin-top:16px;">
+          <button class="btn primary" id="restart">다시 풀기</button>
+        </div>
+        <p class="small" style="margin-top:14px;">
+          다음 단계: 전하님 예문을 더 붙이면, 같은 엔진으로 <code class="k">20문항</code> 이상도 자동 확장 가능합니다.
+        </p>
+      </div>
+    `;
+
+    document.getElementById("restart").addEventListener("click", () => {
+      idx = 0; score = 0;
+      const rebuilt = prepareQuestions(rawQuestions);
+      questions.splice(0, questions.length, ...rebuilt);
+      render();
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  // 시작
+  render();
+})();
 </script>
 </body>
 </html>
