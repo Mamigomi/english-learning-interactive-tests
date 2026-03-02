@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>복습 테스트 01 (60초 타이머)</title>
+  <style>
+    :root { --bg:#0b0f14; --card:#111826; --text:#e8eef7; --muted:#a9b4c4; --accent:#7dd3fc; --danger:#fb7185; --ok:#86efac; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, sans-serif; background:linear-gradient(180deg,#070a0f, #0b0f14 55%, #070a0f); color:var(--text); }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 22px 14px 40px; }
+    .top { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    .badge { background: rgba(125,211,252,.12); border:1px solid rgba(125,211,252,.25); color:var(--accent); padding:8px 10px; border-radius: 999px; font-weight:700; font-size:13px; }
+    .timer { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); padding:10px 12px; border-radius: 14px; }
+    .timer strong { font-size:18px; letter-spacing:.4px; }
+    .bar { width: 180px; height: 8px; background: rgba(255,255,255,.08); border-radius: 999px; overflow:hidden; }
+    .bar > i { display:block; height:100%; width:100%; background: rgba(125,211,252,.75); }
+    .card { margin-top: 14px; background: rgba(17,24,38,.75); border: 1px solid rgba(255,255,255,.10); border-radius: 20px; padding: 18px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+    .meta { display:flex; justify-content:space-between; align-items:center; gap:10px; color:var(--muted); font-weight:600; }
+    .meta b { color: var(--text); }
+    .passage { margin-top: 12px; line-height: 1.7; font-size: 16px; }
+    .passage .target { color: var(--accent); font-weight: 800; text-decoration: underline; text-underline-offset: 4px; }
+    .q { margin-top: 14px; font-weight: 800; font-size: 16px; }
+    .choices { margin-top: 12px; display:grid; gap:10px; }
+    button.choice {
+      width:100%; text-align:left; border-radius: 16px; padding: 12px 12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: var(--text); font-size: 15px; font-weight: 700; cursor:pointer;
+      transition: transform .06s ease, border-color .12s ease, background .12s ease;
+    }
+    button.choice:hover { transform: translateY(-1px); border-color: rgba(125,211,252,.35); background: rgba(125,211,252,.08); }
+    button.choice:disabled { cursor: not-allowed; opacity:.75; }
+    .choice .num { display:inline-block; width: 30px; color: var(--muted); font-weight: 900; }
+    .feedback { margin-top: 14px; padding: 12px; border-radius: 16px; border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); }
+    .feedback.ok { border-color: rgba(134,239,172,.35); background: rgba(134,239,172,.08); }
+    .feedback.bad { border-color: rgba(251,113,133,.35); background: rgba(251,113,133,.08); }
+    .hint-title { font-weight: 900; margin-bottom: 8px; }
+    .hint-list { margin:0; padding-left: 18px; color: var(--muted); }
+    .actions { margin-top: 14px; display:flex; gap:10px; flex-wrap:wrap; }
+    .btn {
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-weight: 900;
+      cursor:pointer;
+    }
+    .btn.primary { border-color: rgba(125,211,252,.35); background: rgba(125,211,252,.14); color: var(--accent); }
+    .btn.danger { border-color: rgba(251,113,133,.35); background: rgba(251,113,133,.10); color: #fecdd3; }
+    .result { text-align:center; padding: 26px 12px; }
+    .result h1 { margin: 0 0 8px; font-size: 22px; }
+    .result p { margin: 6px 0; color: var(--muted); font-weight: 700; }
+    .small { font-size: 13px; color: var(--muted); font-weight: 700; }
+    .footer { margin-top: 12px; color: var(--muted); font-size: 12px; text-align:center; }
+    .note { color: var(--muted); font-size: 13px; line-height:1.6; margin-top: 10px; }
+    code.k { background: rgba(255,255,255,.06); padding: 2px 6px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="badge">복습 테스트 · 60초 타이머 · ①~⑤</div>
+      <div class="timer" aria-label="timer">
+        <span class="small">남은 시간</span>
+        <strong id="time">60</strong>
+        <span class="small">초</span>
+        <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+      </div>
+    </div>
+
+    <div class="card" id="card">
+      <!-- 렌더 영역 -->
+    </div>
+
+    <div class="footer">
+      Tip: 틀리면 선택지별 뜻(피드백)이 표시됩니다. 시간 초과 시 자동으로 다음 문제로 넘어갑니다.
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ①~⑤ 표시용
+  const circled = ["①","②","③","④","⑤"];
+
+  // 전하님 제공 예문 "그대로" 사용 (표현/문장 변경 없음).
+  // 단, 타깃 표현에만 span을 씌워 강조(텍스트는 동일).
+  const rawQuestions = [
+    {
+      id: 1,
+      passageHtml:
+`G: What's wrong, Suho? You look worried.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↳무슨 일이야?(=What’s the matter?) ↳look+형용사 ‘~하게 보이다’<br>
+B: My dog is sick. He won't eat or play.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳will not의 축약형<br>
+G: <span class="target">Oh, I'm sorry to hear that.</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳‘그 말을 들으니 유감이야’ (유감, 위로의 표현)<br>
+B: What should I do? I'm so worried.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↳‘난 어떻게 해야 하지?’ (어떤 결정을 내릴지 모를 때 쓰는 표현)`,
+      questionText: "밑줄 친 표현의 뜻으로 가장 알맞은 것은?",
+      // 정답은 options[correctIndex]
+      options: [
+        { text: "그 말을 들으니 유감이야", meaning: "위로/유감 표현" },
+        { text: "정말 부럽다", meaning: "부러움 표현" },
+        { text: "난 이미 알고 있어", meaning: "정보 확인/강조" },
+        { text: "지금 당장 가자", meaning: "제안/촉구" },
+        { text: "그건 네 탓이야", meaning: "비난/책임 전가" }
+      ],
+      correctIndex: 0
+    },
+    {
+      id: 2,
+      passageHtml:
+`G: <span class="target">What's up, Jamie?</span> You look excited.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↳‘잘 지내?’ (친근하고 가벼운 인사말) ↳‘신이 난’ (신이 난 감정을 느낀 대상이 주어일 때 씀)<br>
+B: I got a ticket to the BM concert next month. I'm so excited.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳get(얻다)의 과거형<br>
+G: That's great.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↳‘잘됐다’<br>
+B: Thanks.`,
+      questionText: "밑줄 친 표현의 뜻으로 가장 알맞은 것은?",
+      options: [
+        { text: "무슨 교통수단을 탈까?", meaning: "교통/이동 질문" },
+        { text: "무슨 일이야? / 잘 지내?", meaning: "가벼운 안부/인사" },
+        { text: "어디서 샀어?", meaning: "구매처 질문" },
+        { text: "얼마나 걸려?", meaning: "시간 소요 질문" },
+        { text: "왜 화났어?", meaning: "감정 추궁" }
+      ],
+      correctIndex: 1
+    },
+    {
+      id: 3,
+      passageHtml:
+`G: Is anything wrong, Tim?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↳‘뭐가 잘못됐니?’ (=What’s wrong?)<br>
+B: My phone is not working.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳work ‘작동하다’<br>
+G: <span class="target">That's too bad.</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;↳‘정말 안 됐다’ (유감, 위로의 표현)<br>
+B: It was a birthday present. I'm very upset.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳be동사 is의 과거형&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳‘속상한’`,
+      questionText: "밑줄 친 표현의 뜻으로 가장 알맞은 것은?",
+      options: [
+        { text: "정말 다행이다", meaning: "안도/행운" },
+        { text: "그건 너무 심하다", meaning: "비난/비판" },
+        { text: "정말 안 됐다", meaning: "유감/위로" },
+        { text: "나는 상관없어", meaning: "무관심" },
+        { text: "빨리 축하해줘", meaning: "요구/촉구" }
+      ],
+      correctIndex: 2
+    },
+    {
+      id: 4,
+      passageHtml:
+`B: You know what? My team won the soccer tournament.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↳‘그거 아세요?’ (주의를 끄는 표현) ↳win(이기다)의 과거형<br>
+W: <span class="target">Congratulations, Minsu!</span> I'm really happy for you.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↳‘축하해’ (반드시 복수 형태로 씀)&nbsp;&nbsp;↳‘잘됐다’ (상대방의 좋은 일에 공감하는 표현)<br>
+B: Thanks, Ms. Kim. I'm really happy.`,
+      questionText: "밑줄 친 표현의 뜻으로 가장 알맞은 것은?",
+      options: [
+        { text: "축하해", meaning: "축하 표현" },
+        { text: "미안해", meaning: "사과 표현" },
+        { text: "어서 와", meaning: "환영/인사" },
+        { text: "괜찮아?", meaning: "걱정/안부" },
+        { text: "조심해", meaning: "주의/경고" }
+      ],
+      correctIndex: 0
+    }
+  ];
+
+  // 연속 정답 번호 방지 + 보기 랜덤 셔플(정답 위치도 바뀌도록)
+  function shuffle(array) {
+    const a = array.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildQuestionsNoConsecutiveCorrect(raw) {
+    let lastCorrectPos = -1;
+    return raw.map(q => {
+      // options를 섞고, correctIndex 재계산
+      let opts = q.options.map((o, idx) => ({...o, _isCorrect: idx === q.correctIndex}));
+      // 연속 정답 위치 방지: 셔플을 몇 번 시도
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const shuffled = shuffle(opts);
+        const correctPos = shuffled.findIndex(o => o._isCorrect);
+        if (correctPos !== lastCorrectPos) {
+          lastCorrectPos = correctPos;
+          return {
+            ...q,
+            options: shuffled.map(({text, meaning}) => ({text, meaning})),
+            correctPos
+          };
+        }
+      }
+      // 실패 시 그냥 진행
+      const shuffled = shuffle(opts);
+      const correctPos = shuffled.findIndex(o => o._isCorrect);
+      lastCorrectPos = correctPos;
+      return {
+        ...q,
+        options: shuffled.map(({text, meaning}) => ({text, meaning})),
+        correctPos
+      };
+    });
+  }
+
+  const questions = buildQuestionsNoConsecutiveCorrect(rawQuestions);
+
+  // 상태
+  let idx = 0;
+  let score = 0;
+  let timer = null;
+  let remain = 60;
+  let locked = false;
+
+  const card = document.getElementById("card");
+  const timeEl = document.getElementById("time");
+  const barEl = document.getElementById("bar");
+
+  function nowSeoulString() {
+    // 브라우저가 한국이면 자동 KST, 아니어도 Asia/Seoul로 표기 시도
+    try {
+      return new Intl.DateTimeFormat("ko-KR", {
+        timeZone: "Asia/Seoul",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit"
+      }).format(new Date());
+    } catch {
+      return new Date().toLocaleString("ko-KR");
+    }
+  }
+
+  function setTimer(sec) {
+    remain = sec;
+    timeEl.textContent = String(remain);
+    barEl.style.width = `${(remain/60)*100}%`;
+    barEl.style.background = remain <= 10 ? "rgba(251,113,133,.85)" : "rgba(125,211,252,.75)";
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    setTimer(60);
+    timer = setInterval(() => {
+      if (locked) return;
+      remain -= 1;
+      if (remain < 0) remain = 0;
+      setTimer(remain);
+      if (remain === 0) {
+        clearInterval(timer);
+        // 시간 초과: 오답 처리(피드백은 보여주되 자동 다음으로)
+        locked = true;
+        showFeedback(false, null, true);
+        setTimeout(() => next(), 1200);
+      }
+    }, 1000);
+  }
+
+  function render() {
+    if (idx >= questions.length) return renderResult();
+
+    locked = false;
+    const q = questions[idx];
+
+    const metaHtml = `
+      <div class="meta">
+        <div><b>${idx + 1}</b> / ${questions.length}</div>
+        <div>현재 점수: <b>${score}</b></div>
+      </div>
+    `;
+
+    const choicesHtml = q.options.map((o, i) => `
+      <button class="choice" data-i="${i}">
+        <span class="num">${circled[i]}</span> ${escapeHtml(o.text)}
+      </button>
+    `).join("");
+
+    card.innerHTML = `
+      ${metaHtml}
+      <div class="passage">${q.passageHtml}</div>
+      <div class="q">${escapeHtml(q.questionText)}</div>
+      <div class="choices">${choicesHtml}</div>
+      <div id="feedback"></div>
+      <div class="actions">
+        <button class="btn danger" id="reset">처음부터</button>
+        <button class="btn primary" id="skip">다음 문제</button>
+      </div>
+      <div class="note">
+        • 규칙: 문제당 <code class="k">60초</code> / 선택지는 <code class="k">①~⑤</code> / 정답 번호가 연속되지 않도록 자동 배치<br>
+        • 틀리면: 각 선택지의 한국어 의미(피드백)를 보여줍니다.
+      </div>
+    `;
+
+    card.querySelectorAll("button.choice").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (locked) return;
+        locked = true;
+        const chosen = Number(btn.dataset.i);
+        const correct = chosen === q.correctPos;
+        if (correct) score += 1;
+        // 버튼 비활성화
+        card.querySelectorAll("button.choice").forEach(b => b.disabled = true);
+        showFeedback(correct, chosen, false);
+        clearInterval(timer);
+        setTimeout(() => next(), 900);
+      });
+    });
+
+    document.getElementById("skip").addEventListener("click", () => {
+      if (locked) return next();
+      // 스킵도 오답 처리(점수 변화 없음)
+      locked = true;
+      card.querySelectorAll("button.choice").forEach(b => b.disabled = true);
+      showFeedback(false, null, true);
+      clearInterval(timer);
+      setTimeout(() => next(), 700);
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      clearInterval(timer);
+      idx = 0; score = 0;
+      // 다시 섞어서(정답 위치도 재배치)
+      const rebuilt = buildQuestionsNoConsecutiveCorrect(rawQuestions);
+      questions.splice(0, questions.length, ...rebuilt);
+      render();
+      startTimer();
+    });
+
+    startTimer();
+  }
+
+  function showFeedback(isCorrect, chosen, isAutoOrSkip) {
+    const q = questions[idx];
+    const fb = document.getElementById("feedback");
+    if (!fb) return;
+
+    if (isCorrect) {
+      fb.innerHTML = `
+        <div class="feedback ok">
+          <div class="hint-title">정답 ✅</div>
+          <div>선택한 번호: <b>${chosen !== null ? circled[chosen] : "-"}</b></div>
+        </div>
+      `;
+      return;
+    }
+
+    // 오답/시간초과/스킵: 선택지별 의미 피드백 표시
+    const reason = isAutoOrSkip ? "시간초과/다음으로 이동" : "오답";
+    const list = q.options.map((o, i) =>
+      `<li>${circled[i]} ${escapeHtml(o.text)} → <b>${escapeHtml(o.meaning)}</b></li>`
+    ).join("");
+
+    fb.innerHTML = `
+      <div class="feedback bad">
+        <div class="hint-title">${reason} ❌ 선택지 피드백</div>
+        <ul class="hint-list">${list}</ul>
+      </div>
+    `;
+  }
+
+  function next() {
+    idx += 1;
+    render();
+  }
+
+  function renderResult() {
+    clearInterval(timer);
+    const submitted = nowSeoulString();
+    const total = questions.length;
+    const percent = Math.round((score / total) * 100);
+
+    card.innerHTML = `
+      <div class="result">
+        <h1>제출 완료</h1>
+        <p>점수: <b style="color:var(--text)">${score}</b> / ${total} (${percent}%)</p>
+        <p>제출 시각(KST): <b style="color:var(--text)">${submitted}</b></p>
+        <div class="actions" style="justify-content:center; margin-top:16px;">
+          <button class="btn primary" id="restart">다시 풀기</button>
+        </div>
+        <div class="note" style="max-width:720px; margin:16px auto 0; text-align:left;">
+          • GitHub 구조 권장: <code class="k">docs/review/</code> 아래에 파일을 저장하면 복습 테스트가 깔끔히 분리됩니다.<br>
+          • 다음 단계: 전하님이 추가로 예문을 더 주시면, 이 파일을 <code class="k">20문항</code>으로 확장해서 같은 룰로 자동 배치해드릴 수 있습니다.
+        </div>
+      </div>
+    `;
+
+    document.getElementById("restart").addEventListener("click", () => {
+      idx = 0; score = 0;
+      const rebuilt = buildQuestionsNoConsecutiveCorrect(rawQuestions);
+      questions.splice(0, questions.length, ...rebuilt);
+      render();
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  // 시작
+  render();
+})();
+</script>
+</body>
+</html>
